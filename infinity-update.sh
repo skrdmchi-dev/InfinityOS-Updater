@@ -11,7 +11,7 @@
 #   apps/        -> .deb files, installed by name (install or replace, never remove)
 #   self/        -> files that overwrite this updater itself (new logic/features)
 #
-# Usage: ./infinity-update.sh [--dry-run] [--force] [--list]
+# Usage: ./infinity-update.sh [--dry-run] [--force] [--list] [--mark]
 #
 set -euo pipefail
 
@@ -26,6 +26,7 @@ STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/infinityos-updater"
 CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/infinityos-updater"
 REPO_DIR="$CACHE_DIR/repo"
 VERSION_FILE="$STATE_DIR/version"
+SYSTEM_STAMP="/etc/infinityos-version"   # shipped in the ISO, marks the installed beta
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 # ---------- helpers ----------
@@ -61,6 +62,7 @@ while [[ $# -gt 0 ]]; do
         --dry-run) DRY_RUN=1; shift ;;
         --force)   FORCE=1; shift ;;
         --list)    LIST_ONLY=1; shift ;;
+        --mark)    MARK=1; shift ;;
         -h|--help) usage 0 ;;
         *)         die "unknown option: $1 (see --help)" ;;
     esac
@@ -95,7 +97,9 @@ MANIFEST="$REPO_DIR/manifest.json"
 [[ -f "$MANIFEST" ]] || die "repo has no manifest.json"
 
 # ---------- version gate ----------
-CURRENT_VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo none)"
+# Version is known three ways: the per-user stamp (written after each update),
+# the ISO stamp, or --mark for people already on the current beta.
+CURRENT_VERSION="$(cat "$VERSION_FILE" 2>/dev/null || cat "$SYSTEM_STAMP" 2>/dev/null || echo none)"
 REPO_VERSION="$(jq -r '.version' "$MANIFEST")"
 
 log "Installed : $CURRENT_VERSION"
@@ -103,6 +107,16 @@ log "Repo      : $REPO_VERSION"
 
 if [[ "${LIST_ONLY:-0}" == 1 ]]; then
     jq -r '"\(.version): \(.description // "")"' "$MANIFEST"
+    exit 0
+fi
+
+if [[ "${MARK:-0}" == 1 ]]; then
+    if (( DRY_RUN )); then
+        printf '\033[1;30m  dry-run:\033[0m write %s to %s\n' "$REPO_VERSION" "$VERSION_FILE"
+    else
+        echo "$REPO_VERSION" > "$VERSION_FILE"
+        log "Marked system as $REPO_VERSION — nothing applied."
+    fi
     exit 0
 fi
 

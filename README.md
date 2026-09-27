@@ -43,6 +43,7 @@ already equals the manifest version, nothing is applied unless `--force`.
 ./infinity-update.sh --dry-run  # print every action, change nothing
 ./infinity-update.sh --list     # show repo version/description, exit
 ./infinity-update.sh --force    # re-apply even if version matches
+./infinity-update.sh --mark     # already on this beta? stamp it, apply nothing
 ```
 
 The repo URL is hardcoded in the script (`REPO_URL` at the top) — set it once
@@ -63,6 +64,16 @@ before shipping the ISO. `--repo`/`--branch` exist for testing forks.
 
 Install `infinity-update.sh` somewhere on PATH (e.g. `/usr/local/bin/`).
 If it's in a root-owned location, `self/` updates will use sudo automatically.
+
+Also ship a version stamp so fresh installs know which beta they're on — the
+script checks `/etc/infinityos-version` before assuming "none":
+
+```bash
+echo beta3 | sudo tee /etc/infinityos-version
+```
+
+Without it, a beta 3 install would read "none" and re-apply the whole beta 3
+repo on first run. (Existing beta users can run `--mark` once instead.)
 
 ## Caveats
 
