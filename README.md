@@ -20,11 +20,11 @@ infinityos-repo/
 
 | Folder        | Behavior |
 |---------------|----------|
-| `extensions/` | Each subdirectory is matched by **uuid** (from `metadata.json`): missing → installed to `~/.local/share/gnome-shell/extensions/`; present but different → replaced; identical → skipped. Then auto-enabled. |
+| `extensions/` | Each subdirectory is matched by **uuid** (from `metadata.json`): missing = installed to `~/.local/share/gnome-shell/extensions/`; present but different = replaced; identical = skipped. Then auto-enabled. |
 | `fonts/`      | Font files are installed to `~/.local/share/fonts/`, cache rebuilt, and the first font's family is set as the GNOME interface + document font. |
 | `icons/`      | Each subdirectory is installed to `~/.icons/<name>/` and set as the active GNOME icon theme. |
-| `apps/`       | Each `.deb` is matched by **package name**: not installed → installed; installed at a different version → replaced. Apps already on the system that aren't in the repo are **never removed**. Same version → skipped. |
-| `self/`       | Files matched by **filename**: missing → installed next to the running script; present but different → replaced; identical → skipped. If the script itself changed it re-execs so new logic applies immediately — this is how you ship new folder types/features in the future. |
+| `apps/`       | Each `.deb` is matched by **package name**: not installed = installed; installed at a different version = replaced. Apps already on the system that aren't in the repo are **never removed**. Same version = skipped. |
+| `self/`       | Files matched by **filename**: missing = installed next to the running script; present but different = replaced; identical = skipped. If the script itself changed it re-execs so new logic applies immediately. This is how you ship new folder types/features in the future. |
 
 `manifest.json` is just a version gate:
 
@@ -45,17 +45,17 @@ already equals the manifest version, nothing is applied unless `--force`.
 ./infinity-update.sh --mark     # already on this beta? stamp it, apply nothing
 ```
 
-The repo URL is hardcoded in the script (`REPO_URL` at the top) — set it once
+The repo URL is hardcoded in the script (`REPO_URL` at the top). Set it once
 before shipping the ISO. `--repo`/`--branch` exist for testing forks.
 
 ## Workflow when a new beta drops
 
 1. Boot the new ISO in a VM.
 2. Diff vs the previous beta:
-   - `ls /usr/share/gnome-shell/extensions ~/.local/share/gnome-shell/extensions` → copy new/changed extension dirs into `extensions/`
-   - `/usr/share/fonts`, `fc-list` → copy new font files into `fonts/`
-   - `/usr/share/icons` → copy new/changed icon theme dirs into `icons/`
-   - `dpkg -l` → export updated apps as `.deb`s into `apps/` (`apt download <pkg>`)
+   - `ls /usr/share/gnome-shell/extensions ~/.local/share/gnome-shell/extensions`: copy new/changed extension dirs into `extensions/`
+   - `/usr/share/fonts`, `fc-list`: copy new font files into `fonts/`
+   - `/usr/share/icons`: copy new/changed icon theme dirs into `icons/`
+   - `dpkg -l`: export updated apps as `.deb`s into `apps/` (`apt download <pkg>`)
 3. Bump `version` in `manifest.json`, commit, push.
 4. Users run `./infinity-update.sh`.
 
@@ -64,7 +64,7 @@ before shipping the ISO. `--repo`/`--branch` exist for testing forks.
 Install `infinity-update.sh` somewhere on PATH (e.g. `/usr/local/bin/`).
 If it's in a root-owned location, `self/` updates will use sudo automatically.
 
-Also ship a version stamp so fresh installs know which beta they're on — the
+Also ship a version stamp so fresh installs know which beta they're on. The
 script checks `/etc/infinityos-version` before assuming "none":
 
 ```bash
@@ -79,6 +79,6 @@ repo on first run. (Existing beta users can run `--mark` once instead.)
 - Extension dirs **must** contain `metadata.json` with a `uuid` field.
 - Shell extensions may need a GNOME restart (log out/in on Wayland) before
   enabling sticks.
-- `apps/` expects `.deb` files — for Flatpaks/Snaps you'd add a new folder
+- `apps/` expects `.deb` files. For Flatpaks/Snaps you'd add a new folder
   type and ship the handling code via `self/`.
 - Keep the repo public, or give users a read-only deploy key.
