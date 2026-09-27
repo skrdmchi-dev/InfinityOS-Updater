@@ -1,14 +1,13 @@
 # InfinityOS Updater
 
 Turns new InfinityOS betas into a **delta update** instead of an ISO
-reinstall. Drop what changed into the folders below, bump `manifest.json`,
-push — and users run `./infinity-update.sh` to upgrade in place.
+reinstall. run `./infinity-update.sh` to upgrade in place.
 
 ## Repo layout
 
 ```
 infinityos-repo/
-├── infinity-update.sh   # the script users run (repo URL baked in)
+├── infinity-update.sh   # the script you run (repo URL baked in)
 ├── manifest.json        # {"version": "beta3", "description": "..."}
 ├── extensions/          # one dir per GNOME extension (with metadata.json)
 ├── fonts/               # .ttf / .otf / .ttc files
