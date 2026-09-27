@@ -207,18 +207,26 @@ if [[ -n "$first_font_family" ]]; then
 fi
 
 # ---------- icons ----------
-# Every directory in icons/ is an icon theme; the last one becomes active
-# (.local/share/icons is the XDG path — GTK4/libadwaita apps ignore ~/.icons)
+# Every directory in icons/ is an icon theme, installed system-wide at
+# /usr/share/icons — an existing theme of the same name is replaced outright.
 for theme in "$REPO_DIR/icons"/*/; do
     [[ -d "$theme" ]] || continue
     name="$(basename "${theme%/}")"
-    log "Icon theme: $name"
-    run "mkdir -p '$HOME/.local/share/icons' && cp -r '${theme%/}' '$HOME/.local/share/icons/$name'"
+    dest="/usr/share/icons/$name"
+    if [[ -d "$dest" ]]; then
+        if diff -qr "${theme%/}" "$dest" >/dev/null 2>&1; then
+            log "Icon theme: $name already up to date — skipping"
+            continue
+        fi
+        log "Icon theme: replacing $name"
+        run "sudo rm -rf '$dest'"
+    else
+        log "Icon theme: installing $name"
+    fi
+    run "sudo cp -r '${theme%/}' '$dest'"
+    run "sudo gtk-update-icon-cache -q '$dest' 2>/dev/null || true"
     run "gsettings set org.gnome.desktop.interface icon-theme '$name'"
 done
-if [[ -d "$HOME/.local/share/icons" ]]; then
-    run "gtk-update-icon-cache -q '$HOME/.local/share/icons'/* 2>/dev/null || true"
-fi
 
 # ---------- apps ----------
 # Each .deb is matched by package name: installed? -> replace. Missing? -> install.

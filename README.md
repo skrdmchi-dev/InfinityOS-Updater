@@ -22,7 +22,7 @@ infinityos-repo/
 |---------------|----------|
 | `extensions/` | Each subdirectory is matched by **uuid** (from `metadata.json`): missing = installed to `~/.local/share/gnome-shell/extensions/`; present but different = replaced; identical = skipped. Then auto-enabled. |
 | `fonts/`      | Font files are installed to `~/.local/share/fonts/`, cache rebuilt, and the first font's family is set as the GNOME interface + document font. |
-| `icons/`      | Each subdirectory is installed to `~/.local/share/icons/<name>/` and set as the active GNOME icon theme. |
+| `icons/`      | Each subdirectory is installed system-wide to `/usr/share/icons/<name>/` (replaces an existing theme of the same name) and set as the active GNOME icon theme. |
 | `apps/`       | Each `.deb` is matched by **package name**: not installed = installed; installed at a different version = replaced. Apps already on the system that aren't in the repo are **never removed**. Same version = skipped. |
 | `self/`       | Files matched by **filename**: missing = installed next to the running script; present but different = replaced; identical = skipped. If the script itself changed it re-execs so new logic applies immediately. This is how you ship new folder types/features in the future. |
 
