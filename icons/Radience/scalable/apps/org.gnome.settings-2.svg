@@ -18,7 +18,7 @@
 <path d="M266.793 220.866C270.61 220.53 274.446 220.56 278.25 220.948V250.623C278.25 275.533 278.25 287.989 282.426 299.092C284.265 303.979 286.682 308.625 289.627 312.928C296.319 322.707 306.494 329.802 326.844 343.991L410.228 401.516C404.943 408.264 398.691 414.206 391.665 419.144L391.134 419.514C368.542 435.043 336.595 435.043 273.198 435.043L217.567 435.039C161.325 434.981 131.92 434.049 110.711 419.144C102.451 413.339 95.2585 406.146 89.4531 397.886C78.3806 382.132 75.0204 361.853 74 329.411L216.585 243.175C241.263 229.078 253.602 222.029 266.793 220.866Z" fill="url(#paint10_linear_721_43)"/>
 </g>
 <g filter="url(#filter3_dii_721_43)">
-<ellipse cx="170.067" cy="179.001" rx="41.633" ry="41.633" fill="url(#paint11_linear_721_43)" shape-rendering="crispEdges"/>
+<ellipse cx="170.067" cy="179.001" rx="41.633" ry="41.633" fill="url(#paint11_linear_721_43)" shape-rendering="geometricPrecision"/>
 </g>
 </g>
 <g filter="url(#filter4_dii_721_43)">
@@ -28,7 +28,7 @@
 <circle cx="375" cy="372" r="69" fill="url(#paint13_linear_721_43)"/>
 </g>
 <g filter="url(#filter6_dd_721_43)">
-<circle cx="375" cy="372" r="53.5" stroke="url(#paint14_radial_721_43)" stroke-width="31" shape-rendering="crispEdges"/>
+<circle cx="375" cy="372" r="53.5" stroke="url(#paint14_radial_721_43)" stroke-width="31" shape-rendering="geometricPrecision"/>
 </g>
 </g>
 <defs>
