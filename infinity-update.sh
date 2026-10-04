@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 #
-# infinity-update.sh — InfinityOS delta updater
+# infinity-update.sh — InfinityOS delta updater (LFS/MLFS port)
 #
-# Ships preinstalled on InfinityOS. Pulls the update repo, reads manifest.json,
+# Ported for the MLFS system: missing deps are installed via nix instead of apt,
+# .deb files are extracted directly into / (no dpkg needed), and GNOME
+# extension version validation is disabled for GNOME 50 compatibility.
+#
+# Pulls the update repo, reads manifest.json,
 # and if the version is newer applies the repo contents:
 #
 #   extensions/  -> ~/.local/share/gnome-shell/extensions/ (+ auto-enable)
@@ -69,15 +73,19 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ---------- deps ----------
-for dep in git jq dpkg-deb fc-scan; do
+# On MLFS there is no apt/dpkg — install missing tools via nix instead.
+for dep in git jq fc-scan; do
     command -v "$dep" >/dev/null 2>&1 && continue
-    warn "missing dependency: $dep — attempting to install"
+    warn "missing dependency: $dep — attempting to install via nix"
     case "$dep" in
         fc-scan) pkg=fontconfig ;;
-        dpkg-deb) pkg=dpkg-dev ;;
         *) pkg="$dep" ;;
     esac
-    sudo apt-get update -qq && sudo apt-get install -y "$pkg" || die "install $pkg manually"
+    if command -v nix >/dev/null 2>&1; then
+        nix profile install "nixpkgs#$pkg" || die "install $pkg manually (ninstall $pkg)"
+    else
+        die "install $pkg manually"
+    fi
 done
 
 # ---------- pull repo ----------
@@ -129,13 +137,17 @@ fi
 # Files in self/ replace this updater. Done before everything else so a new
 # InfinityOS update can change how the updater works (e.g. add new folders).
 shopt -s nullglob
-if [[ "${INFINITY_SELF_UPDATED:-0}" != 1 ]] && [[ -d "$REPO_DIR/self" ]] \
+# Skip entirely when running read-only from the nix store — nix handles updates.
+if [[ "${INFINITY_SELF_UPDATED:-0}" != 1 ]] && [[ "$SCRIPT_DIR" != /nix/store/* ]] \
+   && [[ -d "$REPO_DIR/self" ]] \
    && [[ -n "$(ls -A "$REPO_DIR/self" 2>/dev/null)" ]]; then
     changed=0
     script_changed=0
     script_name="$(basename "${BASH_SOURCE[0]}")"
     for f in "$REPO_DIR/self"/*; do
         base="$(basename "$f")"
+        # never let the repo overwrite this LFS port with the Debian variant
+        [[ "$base" == "$(basename "${BASH_SOURCE[0]}")" ]] && continue
         dest="$SCRIPT_DIR/$base"
         if [[ -f "$dest" ]]; then
             cmp -s "$f" "$dest" && continue   # same name, same content — skip
@@ -167,6 +179,8 @@ fi
 
 # ---------- extensions ----------
 # Every directory in extensions/ is a GNOME extension (must contain metadata.json)
+# GNOME 50: allow extensions built for older shell versions
+run "gsettings set org.gnome.shell disable-extension-version-validation true"
 for ext in "$REPO_DIR/extensions"/*/; do
     [[ -d "$ext" ]] || continue
     [[ -f "$ext/metadata.json" ]] || { warn "skipping $ext — no metadata.json"; continue; }
@@ -229,23 +243,33 @@ for theme in "$REPO_DIR/icons"/*/; do
 done
 
 # ---------- apps ----------
-# Each .deb is matched by package name: installed? -> replace. Missing? -> install.
-# Apps already on the system that aren't in the repo are never touched.
+# No dpkg on MLFS: .deb files are ar archives, so extract the payload (data.tar)
+# straight into /. Dependency resolution and postinst scripts don't run —
+# track installed versions with a stamp file so re-runs skip what's done.
+DEB_STATE="$STATE_DIR/debs"
 for deb in "$REPO_DIR/apps"/*.deb; do
     [[ -f "$deb" ]] || continue
-    pkg="$(dpkg-deb -f "$deb" Package)"
-    ver="$(dpkg-deb -f "$deb" Version)"
-    if dpkg -s "$pkg" >/dev/null 2>&1; then
-        installed_ver="$(dpkg -s "$pkg" | awk -F': ' '/^Version/ {print $2}')"
-        if [[ "$installed_ver" == "$ver" ]]; then
-            log "App: $pkg already at $ver — skipping"
-            continue
-        fi
-        log "App: replacing $pkg ($installed_ver -> $ver)"
-    else
-        log "App: installing $pkg $ver"
+    base="$(basename "$deb")"
+    if [[ -f "$DEB_STATE/$base" ]]; then
+        log "App: $base already installed — skipping"
+        continue
     fi
-    run "sudo apt-get install -y '$deb'"
+    log "App: extracting $base"
+    if (( DRY_RUN )); then
+        printf '\033[1;30m  dry-run:\033[0m extract %s into /\n' "$deb"
+        continue
+    fi
+    mkdir -p "$DEB_STATE"
+    tmp="$(mktemp -d)"
+    (cd "$tmp" && ar x "$deb")
+    data_tar="$(ls "$tmp"/data.tar.* 2>/dev/null | head -1)"
+    if [[ -n "$data_tar" ]]; then
+        sudo tar -C / -xf "$data_tar" && touch "$DEB_STATE/$base" \
+            || warn "$base extraction failed"
+    else
+        warn "$base has no data.tar — skipped"
+    fi
+    rm -rf "$tmp"
 done
 
 # ---------- done ----------
