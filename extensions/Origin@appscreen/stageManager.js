@@ -433,11 +433,17 @@ export const StageManagerMixin = Base => class extends Base {
     hitActor.connect("scroll-event", (box, event) =>
       this._onStageScroll(event),
     );
-    Main.layoutManager.addTopChrome(hitActor, {
-      affectsInputRegion: true,
-      affectsStruts: false,
-      trackFullscreen: false,
-    });
+    try {
+        Main.layoutManager.addTopChrome(hitActor);
+    } catch (e) {
+        // GNOME 50: affectsInputRegion was removed; actors tracked as chrome
+        // are included in the input region automatically.
+        Main.layoutManager.uiGroup.remove_child(hitActor);
+        Main.layoutManager.addTopChrome(hitActor, {
+            affectsStruts: false,
+            trackFullscreen: false,
+        });
+    }
     this._stageHitActors.set(actor, hitActor);
     return hitActor;
   }
@@ -787,11 +793,18 @@ export const StageManagerMixin = Base => class extends Base {
       "scroll-event",
       (cover, event) => this._onStageScroll(event),
     );
-    Main.layoutManager.addTopChrome(this._coverLayer, {
-      affectsInputRegion: false,
-      affectsStruts: false,
-      trackFullscreen: false,
-    });
+    try {
+        Main.layoutManager.addTopChrome(this._coverLayer);
+    } catch (e) {
+        // GNOME 50: affectsInputRegion was removed; input region is automatic.
+        // Keep the layer out of pointer handling by making it non-reactive.
+        this._coverLayer.reactive = false;
+        Main.layoutManager.uiGroup.remove_child(this._coverLayer);
+        Main.layoutManager.addTopChrome(this._coverLayer, {
+            affectsStruts: false,
+            trackFullscreen: false,
+        });
+    }
   }
 
   _destroyCoverLayer() {
@@ -871,11 +884,17 @@ export const StageManagerMixin = Base => class extends Base {
         return Clutter.EVENT_PROPAGATE;
       },
     );
-    Main.layoutManager.addTopChrome(this._stageEdgeRevealLayer, {
-      affectsInputRegion: true,
-      affectsStruts: false,
-      trackFullscreen: false,
-    });
+    try {
+        Main.layoutManager.addTopChrome(this._stageEdgeRevealLayer);
+    } catch (e) {
+        // GNOME 50: affectsInputRegion was removed; actors tracked as chrome
+        // are included in the input region automatically.
+        Main.layoutManager.uiGroup.remove_child(this._stageEdgeRevealLayer);
+        Main.layoutManager.addTopChrome(this._stageEdgeRevealLayer, {
+            affectsStruts: false,
+            trackFullscreen: false,
+        });
+    }
   }
 
   _destroyStageEdgeRevealLayer() {

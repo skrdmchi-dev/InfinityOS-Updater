@@ -3641,7 +3641,16 @@ export class OverviewRemake {
     const grid = state.appDisplay?._grid;
     const page = grid?.currentPage ?? 0;
 
-    return (grid?.getItemsAtPage?.(page) ?? []).filter(
+    // GNOME 50: getItemsAtPage throws "does not have page 0" when the
+    // grid hasn't populated its layout yet — treat as empty.
+    let items = [];
+    try {
+      items = grid?.getItemsAtPage?.(page) ?? [];
+    } catch (e) {
+      items = [];
+    }
+
+    return items.filter(
       (actor) => !actor.is_destroyed?.() && (includeHidden || actor.visible),
     );
   }
